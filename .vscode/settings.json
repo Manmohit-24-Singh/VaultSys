@@ -1,0 +1,10 @@
+{
+    "java.project.sourcePaths": [
+        "java-service/src",
+        "java-service/test"
+    ],
+    "java.project.outputPath": "java-service/bin",
+    "java.project.referencedLibraries": [
+        "java-service/lib/**/*.jar"
+    ]
+}
