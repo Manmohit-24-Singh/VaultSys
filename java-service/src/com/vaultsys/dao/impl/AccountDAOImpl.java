@@ -18,8 +18,8 @@ import java.util.Optional;
 public class AccountDAOImpl implements IAccountDAO {
     
     private static final String INSERT_ACCOUNT = 
-        "INSERT INTO accounts (user_id, account_number, balance, currency, status, " +
-        "account_type, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING account_id";
+    "INSERT INTO accounts (user_id, account_number, balance, currency, status, " +
+    "account_type, created_at, updated_at) VALUES (?, ?, ?, ?, ?::account_status_enum, ?, ?, ?) RETURNING account_id";
     
     private static final String SELECT_BY_ID = 
         "SELECT * FROM accounts WHERE account_id = ?";

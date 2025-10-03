@@ -81,14 +81,24 @@ public class ConfigLoader {
      * Load configuration from specified file
      * @param configFile Path to configuration file
      */
-    private void loadConfig(String configFile) {
-        try (FileInputStream input = new FileInputStream(configFile)) {
+private void loadConfig(String configFile) {
+    // Use the class loader to find the file in the classpath, 
+    // which is where files in the 'resources' folder are placed.
+    try (InputStream input = ConfigLoader.class.getClassLoader()
+                                              .getResourceAsStream(configFile)) {
+        
+        if (input != null) {
             properties.load(input);
-        } catch (IOException e) {
-            System.err.println("Warning: Could not load config file: " + configFile);
-            loadDefaults();
+            Logger.getInstance().info("Configuration loaded from classpath: " + configFile);
+        } else {
+            // Log a definitive error if the file cannot be found in the classpath
+            Logger.getInstance().error("Config file not found in classpath: " + configFile);
         }
+    } catch (IOException ex) {
+        Logger.getInstance().error("Error loading config file: " + configFile + 
+                                   " - " + ex.getMessage());
     }
+}
     
     /**
      * Load default values when config file is not available
