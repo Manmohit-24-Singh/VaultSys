@@ -197,9 +197,10 @@ public class AccountService {
      * @param status The new status
      * @return true if update successful
      * @throws AccountException if update fails
+     * @throws AccountNotFoundException if account not found
      */
     public boolean updateAccountStatus(Long accountId, AccountStatus status) 
-            throws AccountException {
+            throws AccountException, AccountNotFoundException {
         try {
             logger.info("Updating account status - Account: " + accountId + ", Status: " + status);
             
@@ -218,8 +219,9 @@ public class AccountService {
      * @param accountId The account ID
      * @return true if closed successfully
      * @throws AccountException if closure fails
+     * @throws AccountNotFoundException if account not found
      */
-    public boolean closeAccount(Long accountId) throws AccountException {
+    public boolean closeAccount(Long accountId) throws AccountException, AccountNotFoundException {
         try {
             logger.info("Closing account: " + accountId);
             
