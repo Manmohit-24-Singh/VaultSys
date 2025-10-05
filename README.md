@@ -570,11 +570,7 @@ This project is open source and available under the [MIT License](LICENSE).
 - GitHub: [@Manmohit-24-Singh](https://github.com/Manmohit-24-Singh)
 - Project Link: [https://github.com/Manmohit-24-Singh/VaultSys](https://github.com/Manmohit-24-Singh/VaultSys)
 
-## 🙏 Acknowledgments
 
-- PostgreSQL for robust database management
-- Java community for best practices and design patterns
-- Open source contributors
 
 ## 📞 Support
 
