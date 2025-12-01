@@ -1,218 +1,142 @@
-# VaultSys Banking System
+# VaultSys - Student Banking System
 
-Student-level banking simulation with Java & PostgreSQL. Demonstrates secure authentication, transaction management, and ACID compliance.
-
----
+A Java-based CLI banking application with PostgreSQL demonstrating **16 core banking functions** across user and admin operations, featuring ACID-compliant transactions and batch processing capabilities.
 
 ## Features
 
-- **Secure Authentication**: SHA-256 + salt, password strength validation
-- **Banking Operations**: Deposit, withdraw, transfer (atomic)
-- **Transaction History**: Full audit trail with timestamps
-- **Admin Functions**: View all users, run 10k transaction simulations
-- **Input Validation**: Comprehensive checks at UI and service layers
+### User Operations (10 Functions)
+1. **Register** - Create new account
+2. **Login** - Authenticate user
+3. **Deposit** - Add funds
+4. **Withdraw** - Remove funds (with freeze check)
+5. **Transfer** - Atomic money transfer between users
+6. **Change Password** - Update credentials
+7. **Close Account** - Delete user and data
+8. **View Transactions** - Last 5 transactions
+9. **Calculate Interest** - Simple interest calculator
+10. **View Cashflow** - Personal income/expense report
 
----
+### Admin Operations (6 Functions)
+11. **Freeze Account** - Lock/unlock user accounts
+12. **View All Transactions** - Global transaction log
+13. **View Reserves** - Total bank balance
+14. **View Insights** - User registration data
+15. **View System Cashflow** - Bank-wide money flow
+16. **Run Simulation** - Insert 10,000 test transactions (batch mode)
 
-## Quick Start
+## Tech Stack
+- **Language:** Java 11+
+- **Database:** PostgreSQL 14+
+- **JDBC Driver:** PostgreSQL 42.7.1
+- **Architecture:** DAO pattern with atomic transactions
+
+## Setup
 
 ### Prerequisites
-- Java 11+
-- PostgreSQL 12+
-- JDBC Driver (included in `lib/`)
-
-### Setup
-
 ```bash
-# 1. Clone repository
-git clone https://github.com/Manmohit-24-Singh/VaultSys.git
-cd VaultSys
+# Install PostgreSQL
+brew install postgresql@14
 
-# 2. Create database
-sudo -u postgres psql
-CREATE DATABASE vaultsys_student;
-CREATE USER student WITH PASSWORD 'student';
-GRANT ALL PRIVILEGES ON DATABASE vaultsys_student TO student;
-\q
+# Start PostgreSQL
+brew services start postgresql@14
 
-# 3. Run schema
-psql -U student -d vaultsys_student -f database/schema.sql
+# Create database and user
+psql postgres -c "CREATE USER student WITH PASSWORD 'student';"
+psql postgres -c "CREATE DATABASE vaultsys_student OWNER student;"
+```
 
-# 4. Configure database (edit if needed)
-cp db.properties.example db.properties
-
-# 5. Compile
+### Compile
+```bash
 javac -d bin -cp "lib/*" src/com/vaultsys/*.java
+```
 
-# 6. Run
+### Run
+```bash
+./run.sh
+# OR
 java -cp "bin:lib/*" com.vaultsys.Main
 ```
-
----
-
-## Usage
-
-### Register New User
-```
-Username: yourname
-Password: SecurePass123  (min 8 chars, uppercase+lowercase+digit)
-Full Name: Your Name
-```
-
-### Login & Banking
-```
-1. View Balance    → Check account balances
-2. Deposit         → Add funds
-3. Withdraw        → Remove funds (with balance check)
-4. Transfer        → Send money to another user
-5. History         → View last 10 transactions
-6. Logout          → End session
-```
-
-### Admin Functions (username: admin, password: admin123)
-```
-7. View All Users           → See all users and balances
-8. Run Simulation (10k)     → Performance test with batch processing
-```
-
----
-
-## Project Structure
-
-```
-VaultSys/
-├── src/com/vaultsys/
-│   ├── Main.java              # CLI entry point
-│   ├── User.java              # User model
-│   ├── AuthService.java       # Authentication + security
-│   ├── BankingService.java    # Core banking + ACID transactions
-│   ├── AdminService.java      # Admin features
-│   ├── SimulationService.java # Performance testing
-│   └── DatabaseHelper.java    # DB connection + config
-├── database/
-│   └── schema.sql             # Database schema
-├── lib/
-│   └── postgresql-42.7.3.jar  # JDBC driver
-├── bin/                       # Compiled classes
-└── db.properties              # Database config
-```
-
----
 
 ## Database Schema
 
-### users
+Auto-created on first run via `Database.init()`:
+
 ```sql
 CREATE TABLE users (
-    user_id SERIAL PRIMARY KEY,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    password_salt VARCHAR(255) NOT NULL,  -- Random salt per user
-    full_name VARCHAR(100) NOT NULL,
-    role VARCHAR(20) DEFAULT 'CUSTOMER'
+    id SERIAL PRIMARY KEY,
+    username TEXT UNIQUE,
+    password TEXT,
+    balance DECIMAL(15,2) DEFAULT 0.00,
+    is_frozen BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-```
 
-### accounts
-```sql
-CREATE TABLE accounts (
-    account_id SERIAL PRIMARY KEY,
-    user_id INT REFERENCES users(user_id),
-    account_type VARCHAR(20) NOT NULL,
-    balance DECIMAL(15, 2) DEFAULT 0.00
-);
-```
-
-### transactions
-```sql
 CREATE TABLE transactions (
-    transaction_id SERIAL PRIMARY KEY,
-    account_id INT REFERENCES accounts(account_id),
-    transaction_type VARCHAR(20) NOT NULL,
-    amount DECIMAL(15, 2) NOT NULL,
-    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    description VARCHAR(255)
+    id SERIAL PRIMARY KEY,
+    user_id INT,
+    type TEXT,
+    amount DECIMAL(15,2),
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
----
-
-## Security Features
-
-### Password Security
-- **SHA-256 hashing** with random salt per user
-- **Salt generation**: 16 bytes via SecureRandom
-- **Strength requirements**: 8+ chars, uppercase, lowercase, digit
-- **Protection**: Prevents rainbow table attacks
-
-### Database Security
-- **PreparedStatements** prevent SQL injection
-- **ACID transactions** ensure data consistency
-- **Atomic transfers** (both accounts update or neither)
-- **Input validation** at multiple layers
-
----
-
-## Interview Talking Points
-
-### Technical Highlights
-1. **ACID Transactions**: Atomic transfers with rollback on failure
-2. **Password Security**: Salt + SHA-256 (explain why salt matters)
-3. **Batch Processing**: 10k transactions in ~2-5 seconds
-4. **Input Validation**: Defense in depth (UI + service layers)
-5. **Configuration**: Externalized to `db.properties` (no hardcoded credentials)
-
-### Code Walkthrough
-- **BankingService.transfer()**: Demonstrates transaction management
-- **AuthService.hashPassword()**: Shows salt implementation
-- **SimulationService**: Batch processing with addBatch/executeBatch
-- **Main.java**: Menu-driven architecture with state management
-
-### What You'd Improve
-- Add connection pooling (HikariCP)
-- Implement unit tests (JUnit)
-- Use PBKDF2 instead of SHA-256 for password hashing
-- Add logging framework (SLF4J)
-- Implement pagination for transaction history
-
----
-
-## Common Commands
+## Testing Workflow
 
 ```bash
-# Recompile after changes
-javac -d bin -cp "lib/*" src/com/vaultsys/*.java
+# 1. Run application
+./run.sh
 
-# Run application
-java -cp "bin:lib/*" com.vaultsys.Main
+# 2. Create account (Option 3)
+Username: alice
+Password: pass123
 
-# Reset database
-psql -U student -d vaultsys_student -f database/schema.sql
+# 3. Login (Option 1)
+Username: alice
+Password: pass123
 
-# View database
-psql -U student -d vaultsys_student
-SELECT * FROM users;
-SELECT * FROM accounts;
-SELECT * FROM transactions;
+# 4. Test operations
+Deposit: $1000
+Withdraw: $200
+Transfer: $50 to bob
+
+# 5. Admin login (Option 2)
+Password: admin123
+Run Simulation → Adds 10k records
+View Reserves → Check total balance
+
+# 6. Verify database
+psql -U student -d vaultsys_student -c "SELECT * FROM users;"
+psql -U student -d vaultsys_student -c "SELECT COUNT(*) FROM transactions;"
 ```
 
----
+## Project Structure
+```
+VaultSys/
+├── src/com/vaultsys/
+│   ├── Database.java       # Connection + Schema
+│   ├── BankingSystem.java  # 16 Business Functions
+│   └── Main.java           # CLI Interface
+├── bin/                    # Compiled .class files
+├── lib/
+│   └── postgresql.jar      # JDBC Driver
+└── run.sh                  # Execution script
+```
 
-## Performance
+## Key Implementation Highlights
 
-- **Single Transaction**: ~50-100ms
-- **10k Transactions (batched)**: ~2-5 seconds
-- **Batch Size**: 1,000 per executeBatch()
+- **ACID Transactions:** Transfer uses `setAutoCommit(false)` + `commit()`
+- **Batch Processing:** 10k simulation uses `addBatch()` + `executeBatch()`
+- **Security:** Account freeze prevents withdrawals/transfers
+- **Prepared Statements:** All queries use parameterized SQL (SQL injection safe)
+- **Resource Management:** Try-with-resources for auto-close
+- **Atomic Operations:** Transfer is all-or-nothing
 
----
+## Reset Database
+```bash
+psql -U student -d vaultsys_student -c "DROP TABLE IF EXISTS transactions, users CASCADE;"
+./run.sh  # Recreates schema
+```
 
-## Author
-
-**Manmohit Singh**  
-GitHub: [@Manmohit-24-Singh](https://github.com/Manmohit-24-Singh)
-
----
-
-## License
-
-MIT License - Open Source
+## Admin Credentials
+- **Username:** N/A (direct password)
+- **Password:** `admin123`
