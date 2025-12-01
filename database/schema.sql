@@ -1,5 +1,4 @@
 -- VaultSys Database Schema
--- Simple, student-level design
 
 DROP DATABASE IF EXISTS vaultsys_student;
 CREATE DATABASE vaultsys_student;
@@ -11,6 +10,7 @@ CREATE TABLE users (
     user_id SERIAL PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL, -- Storing hashed passwords
+    password_salt VARCHAR(255) NOT NULL, -- Random salt for each password
     full_name VARCHAR(100) NOT NULL,
     role VARCHAR(20) DEFAULT 'CUSTOMER' -- 'CUSTOMER' or 'ADMIN'
 );
@@ -34,9 +34,9 @@ CREATE TABLE transactions (
 );
 
 -- Insert a default admin user (password: admin123)
--- Hash generated using SHA-256 for "admin123"
-INSERT INTO users (username, password_hash, full_name, role)
-VALUES ('admin', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'System Admin', 'ADMIN');
+-- Hash generated using SHA-256 with salt for "admin123"
+INSERT INTO users (username, password_hash, password_salt, full_name, role)
+VALUES ('admin', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'adminsalt', 'System Admin', 'ADMIN');
 
 -- Create an account for the admin
 INSERT INTO accounts (user_id, account_type, balance)

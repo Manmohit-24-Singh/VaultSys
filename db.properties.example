@@ -1,0 +1,6 @@
+# VaultSys Database Configuration Example
+# Copy this file to db.properties and update with your database credentials
+
+db.url=jdbc:postgresql://127.0.0.1:5432/vaultsys_student
+db.user=your_username
+db.password=your_password

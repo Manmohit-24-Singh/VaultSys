@@ -2,8 +2,18 @@ package com.vaultsys;
 
 import java.sql.*;
 
+/**
+ * Banking Service - handles all core banking operations
+ * This demonstrates ACID transactions with commit/rollback
+ * All money operations are transactional to prevent partial updates
+ */
 public class BankingService {
 
+    /**
+     * Displays all accounts and balances for a user
+     * Uses LEFT JOIN pattern to handle users without accounts
+     * gracefully
+     */
     public void viewBalance(User user) {
         String sql = "SELECT account_type, balance FROM accounts WHERE user_id = ?";
         try (Connection conn = DatabaseHelper.connect();
@@ -26,9 +36,14 @@ public class BankingService {
         }
     }
 
+    /**
+     * Deposits money into user's primary account
+     * Uses performTransaction() which wraps logic in database transaction
+     */
     public boolean deposit(User user, double amount) {
         if (amount <= 0)
             return false;
+
         int accountId = getPrimaryAccountId(user.getId());
         if (accountId == -1)
             return false;
@@ -36,25 +51,38 @@ public class BankingService {
         return performTransaction(accountId, "DEPOSIT", amount, "ATM Deposit");
     }
 
+    /**
+     * Withdraws money from user's account
+     * Checks balance BEFORE attempting withdrawal (business logic validation)
+     */
     public boolean withdraw(User user, double amount) {
         if (amount <= 0)
             return false;
+
         int accountId = getPrimaryAccountId(user.getId());
         if (accountId == -1)
             return false;
 
+        // Balance check prevents overdraft
         double currentBalance = getBalance(accountId);
         if (currentBalance < amount) {
             System.out.println("Insufficient funds.");
             return false;
         }
 
+        // Negative amount for withdrawal
         return performTransaction(accountId, "WITHDRAWAL", -amount, "ATM Withdrawal");
     }
 
+    /**
+     * Transfers money between two users atomically
+     * KEY FEATURE - Demonstrates ACID transaction with rollback
+     * Either both accounts update or neither does (atomic operation)
+     */
     public boolean transfer(User user, String targetUsername, double amount) {
         if (amount <= 0)
             return false;
+
         int sourceAccountId = getPrimaryAccountId(user.getId());
         int targetUserId = getUserIdByUsername(targetUsername);
 
@@ -75,22 +103,22 @@ public class BankingService {
             return false;
         }
 
-        // Transactional transfer
+        // ATOMIC TRANSFER - Both operations succeed or both fail
         try (Connection conn = DatabaseHelper.connect()) {
-            conn.setAutoCommit(false);
+            conn.setAutoCommit(false); // Start transaction
             try {
-                // Deduct from source
+                // Deduct from source account
                 updateBalance(conn, sourceAccountId, -amount);
                 logTransaction(conn, sourceAccountId, "TRANSFER_OUT", -amount, "Transfer to " + targetUsername);
 
-                // Add to target
+                // Add to target account
                 updateBalance(conn, targetAccountId, amount);
                 logTransaction(conn, targetAccountId, "TRANSFER_IN", amount, "Transfer from " + user.getUsername());
 
-                conn.commit();
+                conn.commit(); // Both succeeded - commit transaction
                 return true;
             } catch (SQLException e) {
-                conn.rollback();
+                conn.rollback(); // One failed - rollback everything
                 e.printStackTrace();
                 return false;
             }
@@ -100,6 +128,10 @@ public class BankingService {
         }
     }
 
+    /**
+     * Shows recent transaction history
+     * LIMIT 10 for performance, ORDER BY DESC for newest first
+     */
     public void viewHistory(User user) {
         int accountId = getPrimaryAccountId(user.getId());
         String sql = "SELECT * FROM transactions WHERE account_id = ? ORDER BY timestamp DESC LIMIT 10";
@@ -123,7 +155,12 @@ public class BankingService {
         }
     }
 
-    // Helpers
+    // ========== Helper Methods ==========
+
+    /**
+     * Gets primary account ID for a user
+     * Using LIMIT 1 assumes one account per user for simplicity
+     */
     private int getPrimaryAccountId(int userId) {
         String sql = "SELECT account_id FROM accounts WHERE user_id = ? LIMIT 1";
         try (Connection conn = DatabaseHelper.connect();
@@ -166,6 +203,10 @@ public class BankingService {
         return 0.0;
     }
 
+    /**
+     * Wraps deposit/withdrawal in a transaction
+     * setAutoCommit(false) starts transaction, commit() makes permanent
+     */
     private boolean performTransaction(int accountId, String type, double amount, String desc) {
         try (Connection conn = DatabaseHelper.connect()) {
             conn.setAutoCommit(false);
@@ -185,6 +226,10 @@ public class BankingService {
         }
     }
 
+    /**
+     * Updates account balance
+     * Uses same connection for transaction consistency
+     */
     private void updateBalance(Connection conn, int accountId, double amount) throws SQLException {
         String sql = "UPDATE accounts SET balance = balance + ? WHERE account_id = ?";
         try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -194,6 +239,10 @@ public class BankingService {
         }
     }
 
+    /**
+     * Logs transaction to database
+     * Audit trail - every money movement is recorded
+     */
     private void logTransaction(Connection conn, int accountId, String type, double amount, String desc)
             throws SQLException {
         String sql = "INSERT INTO transactions (account_id, transaction_type, amount, description) VALUES (?, ?, ?, ?)";
